@@ -17,7 +17,9 @@ seconds and a final `gone` message on `pagehide`.
 
 The unread shim returns early unless the page host is `google.com` or a `*.google.com` subdomain. Chat
 embeds frames from other origins (feedback, contacts hovercard, account cookie rotation), and those
-frames must not be able to post unread state to the app.
+frames must not be able to post unread state to the app. `UnreadTracker` enforces the same rule on the
+message itself (`message.frameInfo.securityOrigin`), because the handler is registered on the shared
+content controller and is therefore reachable from every frame, whether or not the shim installed.
 
 Dynamic values in `NSLog` messages are passed with a fixed format string (`"%@"`), never interpolated
 into the format string itself. Page URLs and labels can contain percent-encoded text that would
@@ -53,7 +55,8 @@ every frame.
   `https://ssl.gstatic.com/dynamite/images/favicons_20260602/chat_2026_logo_favicon_no_dot_64px.png`.
   The variant with unread messages was not observed; a name containing `dot` without `no_` is assumed.
 - Many third-party frames (feedback, contacts hovercard, Workspace side panel, account cookie rotation)
-  also report; they have no labels and are ignored by the computation.
+  reported before the host guard was added; they have no labels and were ignored by the computation, and
+  they can no longer report at all.
 
 ## Known limitations
 

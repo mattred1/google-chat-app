@@ -39,6 +39,12 @@ final class UnreadTracker: NSObject, WKScriptMessageHandler {
     private var frames: [String: FrameState] = [:]
 
     func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
+        // The handler is reachable from every frame, so a frame on another origin must not be able to
+        // set the badge even though the shim itself refuses to run there.
+        guard LinkPolicy.isGoogleHost(message.frameInfo.securityOrigin.host) else {
+            return
+        }
+
         guard let payload = message.body as? [String: Any], let frame = payload["frame"] as? String else {
             return
         }
