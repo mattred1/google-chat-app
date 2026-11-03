@@ -24,9 +24,18 @@ enum LinkPolicy {
     static let userAgent =
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15"
 
+    /// Google registrable domains that may stay in the app. Add a country domain here when sign-in on
+    /// that domain has to work; the list is deliberately explicit instead of matching any `google` label.
+    private static let googleDomains = [
+        "google.com",
+        "google.nl",
+        "google.co.uk",
+    ]
+
     static func isInternal(_ url: URL) -> Bool {
-        guard let host = url.host?.lowercased() else {
-            return true
+        // Only hosted HTTPS pages are internal. A URL without a host (`file:`, `data:`) is never one.
+        guard let host = url.host?.lowercased(), url.scheme?.lowercased() == "https" else {
+            return false
         }
 
         if host == "chat.google.com" {
@@ -37,19 +46,35 @@ enum LinkPolicy {
             return url.path.hasPrefix("/chat")
         }
 
-        // Landing page for signed-out users and the sign-in flow (including country domains such as google.nl).
-        if host == "workspace.google.com" || host == "accounts.youtube.com" {
+        // Landing page for signed-out users and the sign-in flow.
+        if host == "workspace.google.com" {
             return true
         }
 
-        return host.hasPrefix("accounts.google.")
+        // YouTube's account picker, used during sign-in.
+        if host == "accounts.youtube.com" {
+            return url.path.hasPrefix("/accounts/")
+        }
+
+        // The sign-in flow itself runs on accounts.<domain>.
+        if googleDomains.contains(where: { host == "accounts." + $0 }) {
+            return true
+        }
+
+        // Cookie hand-off to a country domain, and the account pages on www.google.com.
+        return (isGoogleDomainHost(host) && url.path.hasPrefix("/accounts/SetSID"))
             || (host == "www.google.com" && url.path.hasPrefix("/accounts"))
-            || (isGoogleDomain(host) && url.path.hasPrefix("/accounts/SetSID"))
     }
 
-    /// google.com, google.nl, google.co.uk and their subdomains.
-    private static func isGoogleDomain(_ host: String) -> Bool {
-        host.split(separator: ".").contains("google")
+    /// The registrable domain itself or its `www.` host, never another subdomain.
+    private static func isGoogleDomainHost(_ host: String) -> Bool {
+        googleDomains.contains { host == $0 || host == "www." + $0 }
+    }
+
+    /// Camera and microphone are only needed for Chat and Meet.
+    static func allowsMediaCapture(host: String) -> Bool {
+        let host = host.lowercased()
+        return host == "chat.google.com" || host == "meet.google.com"
     }
 
     static func isWeb(_ url: URL) -> Bool {

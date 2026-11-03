@@ -311,7 +311,7 @@ extension ChatWindowController: WKUIDelegate {
         type: WKMediaCaptureType,
         decisionHandler: @escaping @MainActor (WKPermissionDecision) -> Void
     ) {
-        decisionHandler(origin.host.hasSuffix(".google.com") ? .grant : .prompt)
+        decisionHandler(LinkPolicy.allowsMediaCapture(host: origin.host) ? .grant : .prompt)
     }
 }
 

@@ -38,11 +38,14 @@ conversation, empty when not found), `kind`, `group` and `target` (the conversat
   Chat makes it unique per message (see below);
 - `kind`, `group` and `target` are stored in the notification's `userInfo`, so a click still knows which
   conversation to open after the page was reloaded or the app was restarted;
-- the avatar is downloaded (3 s timeout) and converted to PNG on a background executor, because
-  Notification Center does not accept WebP. The converted image is cached by URL (max 32). The PNG is
-  written to a private folder in the temp directory; files in that folder older than an hour are removed
-  when the next avatar is prepared. The file cannot be deleted right away: Notification Center moves it
-  into its own store when the request is validated, and only failed attempts stay behind;
+- the avatar is only downloaded when it is an `https` URL on `google.com`, `googleusercontent.com` or
+  `gstatic.com` (or a subdomain of those); the app would otherwise fetch a URL chosen by the page. A
+  rejected avatar leaves the notification without an attachment. The download (3 s timeout) and PNG
+  conversion run on a background executor, because Notification Center does not accept WebP. The
+  converted image is cached by URL (max 32). The PNG is written to a private folder in the temp
+  directory; files in that folder older than an hour are removed when the next avatar is prepared. The
+  file cannot be deleted right away: Notification Center moves it into its own store when the request is
+  validated, and only failed attempts stay behind;
 - the frame that created the notification is remembered (last 200) for the click.
 
 The notification and unread shims return early unless the page host is `google.com` or a `*.google.com`

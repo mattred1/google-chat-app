@@ -203,9 +203,20 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
         }
     }
 
+    /// Avatars come from Google's image hosts, so only those are fetched.
+    private static func isAllowedIconURL(_ url: URL) -> Bool {
+        guard url.scheme?.lowercased() == "https", let host = url.host?.lowercased() else {
+            return false
+        }
+
+        return ["google.com", "googleusercontent.com", "gstatic.com"]
+            .contains { host == $0 || host.hasSuffix("." + $0) }
+    }
+
     /// Downloads the avatar and converts it to PNG, because Notification Center does not accept WebP.
     private static func attachment(for url: URL) async -> UNNotificationAttachment? {
-        guard LinkPolicy.isWeb(url) else {
+        guard isAllowedIconURL(url) else {
+            Log.debug("Notification icon rejected: \(url.host ?? "")")
             return nil
         }
 

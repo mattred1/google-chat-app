@@ -10,18 +10,26 @@ Status: implemented in 1.0.0, verified working on 2026-10-30.
 - Attachments can be uploaded through the standard file dialog (multiple files and folders when the page
   allows it). Downloads go to `~/Downloads` with a unique name (`file (1).pdf`), and the Downloads stack
   in the Dock bounces when done.
-- Camera and microphone requests from `*.google.com` are granted (macOS still asks once per app).
+- Camera and microphone requests from `chat.google.com` and `meet.google.com` are granted (macOS still
+  asks once per app).
 - JavaScript `alert()` and `confirm()` show native alerts.
 
 ## Rules (`LinkPolicy.isInternal`)
 
-A URL stays in the app when its host is:
+A URL stays in the app when it uses `https` and its host is:
 
 - `chat.google.com`;
 - `mail.google.com` with a path starting with `/chat`;
-- `workspace.google.com` (landing page for signed-out users) or `accounts.youtube.com`;
-- `accounts.google.*`, `www.google.com/accounts...`, or any Google domain with `/accounts/SetSID`
+- `workspace.google.com` (landing page for signed-out users);
+- `accounts.youtube.com` with a path starting with `/accounts/`;
+- `accounts.<domain>` for one of the domains in `LinkPolicy.googleDomains` (`google.com`, `google.nl`,
+  `google.co.uk`), `www.google.com/accounts...`, or `<domain>`/`www.<domain>` with `/accounts/SetSID`
   (cookie hand-off to country domains such as `google.nl`).
+
+The domains are an explicit list in `LinkPolicy`: add a country domain there when sign-in on that domain
+has to stay in the app. A host that merely contains a `google` label no longer qualifies. A URL without a
+host (`file:`, `data:`) and a URL on any other scheme, `http` included, are treated as external. If
+requiring `https` breaks sign-in, revert only that check and keep the host rules.
 
 Applied as follows:
 
@@ -39,5 +47,6 @@ Applied as follows:
 - Signed out, `chat.google.com` redirects to `accounts.google.com/ServiceLogin?service=dynamite...`.
 - In the first version, clicking "Sign in" opened the browser, because the flow went through a host or
   popup that was not internal. Allowing the hosts above and loading internal popups in the main view
-  fixed it. Every URL sent to the browser is logged as `Opened externally: <url>` to diagnose regressions.
+  fixed it. Every URL sent to the browser is logged as `Opened externally: <url>` when `VerboseLogging`
+  is enabled, to diagnose regressions.
 - Cookies live in the default `WKWebsiteDataStore`, tied to the bundle identifier.
