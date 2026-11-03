@@ -33,8 +33,9 @@ Message list element `div.Bl2pUd`, values are `scrollTop / scrollHeight / client
 
 ## Implementation
 
-`ScrollShim` (all frames):
+`ScrollShim` (all frames, `chat.google.com` and `mail.google.com` only):
 
+- returns early on any other host, where no conversation list exists;
 - tracks "intent": user input events and calls to the scroll APIs (`scrollTop` setter, `scroll`,
   `scrollTo`, `scrollBy`, `scrollIntoView`, `scrollIntoViewIfNeeded`) mark the next 400 ms as intended;
 - a scroll event during intent pins the element when it is within 8 px of the bottom, otherwise unpins it;

@@ -21,7 +21,7 @@ Status: implemented in 1.0.0, verified working on 2026-10-30.
 
 ## Implementation
 
-`NotificationShim` (JavaScript, all frames, document start) replaces:
+`NotificationShim` (JavaScript, all frames, document start, Google hosts only) replaces:
 
 - `window.Notification` with `NativeNotification` (`permission` is always `granted`,
   `requestPermission()` resolves `granted`);
@@ -30,8 +30,8 @@ Status: implemented in 1.0.0, verified working on 2026-10-30.
 
 Each notification is posted to the `gchatNotification` handler with `id`, `title`, `body`, `tag`,
 `icon` (absolute URL), `silent`, `source` (`page` or `serviceWorker`), `thread` (`<kind>/<id>` of the
-conversation, empty when not found), `kind`, `group` and `target` (the conversation URL) and `data`
-(JSON, max 2000 chars, for logging). `NotificationBridge` shows it with `UNUserNotificationCenter`:
+conversation, empty when not found), `kind`, `group` and `target` (the conversation URL).
+`NotificationBridge` shows it with `UNUserNotificationCenter`:
 
 - request identifier `tag:<tag>` when a tag exists, otherwise the shim's id;
 - `threadIdentifier` is `thread`, falling back to the tag. The tag alone does not group anything, because
@@ -44,6 +44,10 @@ conversation, empty when not found), `kind`, `group` and `target` (the conversat
   when the next avatar is prepared. The file cannot be deleted right away: Notification Center moves it
   into its own store when the request is validated, and only failed attempts stay behind;
 - the frame that created the notification is remembered (last 200) for the click.
+
+The notification and unread shims return early unless the page host is `google.com` or a `*.google.com`
+subdomain. Chat embeds frames from other origins (feedback, contacts hovercard, account cookie
+rotation), and those frames must not be able to post notifications to the app.
 
 ### Click handling
 
@@ -76,5 +80,6 @@ conversation, empty when not found), `kind`, `group` and `target` (the conversat
 ## Known limitations
 
 - Notification actions (reply from the notification) are not supported (`maxActions` is 0).
-- If Chat changes the data format, clicks only bring the app to the front. The `Notification` log line
-  contains the raw data for diagnosis.
+- If Chat changes the data format, the conversation is not found: the notification still appears, but
+  clicking it only brings the app to the front. The page data is not forwarded to the app, so inspect it
+  in the page with `findGroup` instead.

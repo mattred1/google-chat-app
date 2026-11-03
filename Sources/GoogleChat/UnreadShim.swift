@@ -25,6 +25,9 @@ enum UnreadShim {
         const handler = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.gchatUnread;
         if (!handler) return;
 
+        // Chat embeds frames from other origins; only Google pages may report unread state.
+        if (!/(^|\.)google\.com$/i.test(location.hostname)) return;
+
         const frameId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
         const unreadLabel = /unread|ongelezen/i;
         let last = '';

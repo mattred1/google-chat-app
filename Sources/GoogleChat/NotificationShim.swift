@@ -25,16 +25,15 @@ enum NotificationShim {
         const handler = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.gchatNotification;
         if (!handler) return;
 
+        // Chat embeds frames from other origins; only Google pages may post notifications.
+        if (!/(^|\.)google\.com$/i.test(location.hostname)) return;
+
         const instances = new Map();
         let counter = 0;
 
         const absoluteUrl = (value) => {
             if (!value) return '';
             try { return new URL(String(value), location.href).href; } catch (e) { return ''; }
-        };
-
-        const describe = (value) => {
-            try { return JSON.stringify(value)?.slice(0, 2000) ?? ''; } catch (e) { return ''; }
         };
 
         // Chat's notification.data contains no link but an internal structure with a GroupId:
@@ -108,7 +107,6 @@ enum NotificationShim {
                     kind: this.group ? this.group.kind : '',
                     group: this.group ? this.group.id : '',
                     target: this.group ? groupUrl(this.group) : '',
-                    data: describe(this.data),
                 });
 
                 setTimeout(() => this._emit('show'), 0);

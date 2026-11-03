@@ -10,10 +10,14 @@ Status: implemented in 1.0.0, verified working on 2026-10-30.
 
 ## Implementation
 
-`UnreadShim` (all frames) reports per frame, at most once per second and only on change, to the
-`gchatUnread` handler: a random frame id, URL, `document.title`, favicon URLs and the distinct
-`aria-label`s that contain `unread` or `ongelezen` (max 50). It also sends a heartbeat every 30 seconds
-and a final `gone` message on `pagehide`.
+`UnreadShim` (all frames, Google hosts only) reports per frame, at most once per second and only on
+change, to the `gchatUnread` handler: a random frame id, URL, `document.title`, favicon URLs and the
+distinct `aria-label`s that contain `unread` or `ongelezen` (max 50). It also sends a heartbeat every 30
+seconds and a final `gone` message on `pagehide`.
+
+The unread shim returns early unless the page host is `google.com` or a `*.google.com` subdomain. Chat
+embeds frames from other origins (feedback, contacts hovercard, account cookie rotation), and those
+frames must not be able to post unread state to the app.
 
 Dynamic values in `NSLog` messages are passed with a fixed format string (`"%@"`), never interpolated
 into the format string itself. Page URLs and labels can contain percent-encoded text that would

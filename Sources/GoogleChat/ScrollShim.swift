@@ -26,6 +26,9 @@ enum ScrollShim {
         if (window.__gchatStickToBottom) return;
         window.__gchatStickToBottom = true;
 
+        // Only the Chat pages have a conversation list to keep at the bottom.
+        if (location.hostname !== 'chat.google.com' && location.hostname !== 'mail.google.com') return;
+
         const threshold = 8;
         const pinned = new Set();
         let intentUntil = 0;
