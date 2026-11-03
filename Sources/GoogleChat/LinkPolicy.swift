@@ -16,6 +16,8 @@
 
 import Foundation
 
+import Foundation
+
 /// Decides which URLs stay in the app and which open in the default browser.
 enum LinkPolicy {
     static let startURL = URL(string: "https://chat.google.com/")!
@@ -24,13 +26,20 @@ enum LinkPolicy {
     static let userAgent =
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15"
 
-    /// Google registrable domains that may stay in the app. Add a country domain here when sign-in on
-    /// that domain has to work; the list is deliberately explicit instead of matching any `google` label.
-    private static let googleDomains = [
-        "google.com",
-        "google.nl",
-        "google.co.uk",
-    ]
+    /// `google.<tld>` and `google.<tld>.<cc>` behind `accounts.` or `www.`, such as `accounts.google.nl`
+    /// and `www.google.co.uk`. Anchored, so `google.com.evil.test` and `evil-google.com` do not match.
+    private static let accountsDomainPattern = try! NSRegularExpression(
+        pattern: #"^accounts\.google\.(?:[a-z]{2,3})(?:\.[a-z]{2})?$"#
+    )
+    private static let googleDomainPattern = try! NSRegularExpression(
+        pattern: #"^(?:www\.)?google\.(?:[a-z]{2,3})(?:\.[a-z]{2})?$"#
+    )
+
+    /// Hosts owned by Google. Also used to decide whether a frame may post messages to the app.
+    static func isGoogleHost(_ host: String) -> Bool {
+        let host = host.lowercased()
+        return host == "google.com" || host.hasSuffix(".google.com")
+    }
 
     static func isInternal(_ url: URL) -> Bool {
         // Only hosted HTTPS pages are internal. A URL without a host (`file:`, `data:`) is never one.
@@ -56,19 +65,18 @@ enum LinkPolicy {
             return url.path.hasPrefix("/accounts/")
         }
 
-        // The sign-in flow itself runs on accounts.<domain>.
-        if googleDomains.contains(where: { host == "accounts." + $0 }) {
+        // The sign-in flow itself runs on accounts.<domain>, for every Google country domain.
+        if matches(host, accountsDomainPattern) {
             return true
         }
 
         // Cookie hand-off to a country domain, and the account pages on www.google.com.
-        return (isGoogleDomainHost(host) && url.path.hasPrefix("/accounts/SetSID"))
+        return (matches(host, googleDomainPattern) && url.path.hasPrefix("/accounts/SetSID"))
             || (host == "www.google.com" && url.path.hasPrefix("/accounts"))
     }
 
-    /// The registrable domain itself or its `www.` host, never another subdomain.
-    private static func isGoogleDomainHost(_ host: String) -> Bool {
-        googleDomains.contains { host == $0 || host == "www." + $0 }
+    private static func matches(_ host: String, _ pattern: NSRegularExpression) -> Bool {
+        pattern.firstMatch(in: host, range: NSRange(host.startIndex..., in: host)) != nil
     }
 
     /// Camera and microphone are only needed for Chat and Meet.

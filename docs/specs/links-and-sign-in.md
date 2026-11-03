@@ -22,14 +22,16 @@ A URL stays in the app when it uses `https` and its host is:
 - `mail.google.com` with a path starting with `/chat`;
 - `workspace.google.com` (landing page for signed-out users);
 - `accounts.youtube.com` with a path starting with `/accounts/`;
-- `accounts.<domain>` for one of the domains in `LinkPolicy.googleDomains` (`google.com`, `google.nl`,
-  `google.co.uk`), `www.google.com/accounts...`, or `<domain>`/`www.<domain>` with `/accounts/SetSID`
-  (cookie hand-off to country domains such as `google.nl`).
+- `accounts.google.<tld>` and `accounts.google.<tld>.<cc>` (`accounts.google.com`, `accounts.google.nl`,
+  `accounts.google.co.uk`);
+- `google.<tld>` or `www.google.<tld>` with `/accounts/SetSID` (cookie hand-off to country domains such
+  as `google.nl`), and `www.google.com/accounts...`.
 
-The domains are an explicit list in `LinkPolicy`: add a country domain there when sign-in on that domain
-has to stay in the app. A host that merely contains a `google` label no longer qualifies. A URL without a
-host (`file:`, `data:`) and a URL on any other scheme, `http` included, are treated as external. If
-requiring `https` breaks sign-in, revert only that check and keep the host rules.
+The country domains are matched by an anchored pattern in `LinkPolicy`, so any Google country domain
+works without maintaining a list. A host that merely contains a `google` label no longer qualifies, and a
+deeper host such as `google.com.evil.test` or `accounts.google.com.evil.test` does not match either. A URL
+without a host (`file:`, `data:`) and a URL on any other scheme, `http` included, are treated as external.
+If requiring `https` breaks sign-in, revert only that check and keep the host rules.
 
 Applied as follows:
 
