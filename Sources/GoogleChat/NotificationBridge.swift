@@ -76,8 +76,7 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
     /// The shim runs in every frame. Chat embeds frames from other origins, and a script message is
     /// delivered whatever frame posted it, so the frame's origin decides whether the payload is used.
     private static func isGoogleOrigin(_ frame: WKFrameInfo) -> Bool {
-        let host = frame.securityOrigin.host.lowercased()
-        return host == "google.com" || host.hasSuffix(".google.com")
+        LinkPolicy.isGoogleHost(frame.securityOrigin.host)
     }
 
     private static let maximumTitleLength = 300
@@ -204,7 +203,7 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
     }
 
     /// Avatars come from Google's image hosts, so only those are fetched.
-    private static func isAllowedIconURL(_ url: URL) -> Bool {
+    private nonisolated static func isAllowedIconURL(_ url: URL) -> Bool {
         guard url.scheme?.lowercased() == "https", let host = url.host?.lowercased() else {
             return false
         }
@@ -212,6 +211,27 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
         return ["google.com", "googleusercontent.com", "gstatic.com"]
             .contains { host == $0 || host.hasSuffix("." + $0) }
     }
+
+    /// Rejects a redirect that leaves the allowed image hosts, so an allowed URL cannot hand the
+    /// download to a host the allowlist excludes.
+    private final class IconRedirectGuard: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+        nonisolated func urlSession(
+            _ session: URLSession,
+            task: URLSessionTask,
+            willPerformHTTPRedirection response: HTTPURLResponse,
+            newRequest request: URLRequest,
+            completionHandler: @escaping (URLRequest?) -> Void
+        ) {
+            let allowed = request.url.map(NotificationBridge.isAllowedIconURL) ?? false
+            completionHandler(allowed ? request : nil)
+        }
+    }
+
+    private nonisolated static let iconSession = URLSession(
+        configuration: .ephemeral,
+        delegate: IconRedirectGuard(),
+        delegateQueue: nil
+    )
 
     /// Downloads the avatar and converts it to PNG, because Notification Center does not accept WebP.
     private static func attachment(for url: URL) async -> UNNotificationAttachment? {
@@ -255,7 +275,7 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
         request.setValue(LinkPolicy.userAgent, forHTTPHeaderField: "User-Agent")
 
         guard
-            let (data, _) = try? await URLSession.shared.data(for: request),
+            let (data, _) = try? await Self.iconSession.data(for: request),
             let image = NSImage(data: data),
             let tiff = image.tiffRepresentation,
             let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:])

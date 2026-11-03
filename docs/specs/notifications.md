@@ -39,8 +39,10 @@ conversation, empty when not found), `kind`, `group` and `target` (the conversat
 - `kind`, `group` and `target` are stored in the notification's `userInfo`, so a click still knows which
   conversation to open after the page was reloaded or the app was restarted;
 - the avatar is only downloaded when it is an `https` URL on `google.com`, `googleusercontent.com` or
-  `gstatic.com` (or a subdomain of those); the app would otherwise fetch a URL chosen by the page. A
-  rejected avatar leaves the notification without an attachment. The download (3 s timeout) and PNG
+  `gstatic.com` (or a subdomain of those); the app would otherwise fetch a URL chosen by the page.
+  Redirects are re-checked against the same hosts and a redirect elsewhere is refused, so an allowed URL
+  cannot hand the download to another host. A rejected avatar leaves the notification without an
+  attachment. The download (3 s timeout) and PNG
   conversion run on a background executor, because Notification Center does not accept WebP. The
   converted image is cached by URL (max 32). The PNG is written to a private folder in the temp
   directory; files in that folder older than an hour are removed when the next avatar is prepared. The
