@@ -48,7 +48,7 @@ final class DownloadManager: NSObject, WKDownloadDelegate {
 
     func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
         destinations.removeValue(forKey: ObjectIdentifier(download))
-        NSLog("Download failed: \(error.localizedDescription)")
+        NSLog("%@", "Download failed: \(error.localizedDescription)")
     }
 
     private static func uniqueURL(in folder: URL, for filename: String) -> URL {

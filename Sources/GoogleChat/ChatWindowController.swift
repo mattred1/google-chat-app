@@ -187,7 +187,7 @@ extension ChatWindowController: WKNavigationDelegate {
         let isMainFrame = navigationAction.targetFrame?.isMainFrame ?? false
 
         if isMainFrame, navigationAction.navigationType == .linkActivated, LinkPolicy.isWeb(url), !LinkPolicy.isInternal(url) {
-            NSLog("Opened externally: \(url.absoluteString)")
+            NSLog("%@", "Opened externally: \(url.absoluteString)")
             NSWorkspace.shared.open(url)
             decisionHandler(.cancel)
             return
@@ -250,7 +250,7 @@ extension ChatWindowController: WKUIDelegate {
         if LinkPolicy.isInternal(url) {
             webView.load(URLRequest(url: url))
         } else {
-            NSLog("Opened externally: \(url.absoluteString)")
+            NSLog("%@", "Opened externally: \(url.absoluteString)")
             NSWorkspace.shared.open(url)
         }
     }

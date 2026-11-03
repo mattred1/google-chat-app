@@ -15,6 +15,10 @@ Status: implemented in 1.0.0, verified working on 2026-10-30.
 `aria-label`s that contain `unread` or `ongelezen` (max 50). It also sends a heartbeat every 30 seconds
 and a final `gone` message on `pagehide`.
 
+Dynamic values in `NSLog` messages are passed with a fixed format string (`"%@"`), never interpolated
+into the format string itself. Page URLs and labels can contain percent-encoded text that would
+otherwise be interpreted as formatting directives.
+
 `UnreadTracker` keeps the latest state per frame id (reset on every main-frame `didCommit`) and computes
 the badge with `UnreadCount`:
 

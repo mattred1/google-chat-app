@@ -66,7 +66,7 @@ final class UnreadTracker: NSObject, WKScriptMessageHandler {
         frames[frame] = state
 
         if !state.icons.isEmpty || !state.labels.isEmpty {
-            NSLog("Unread state \(url): title=\(state.title) icons=\(state.icons) labels=\(state.labels)")
+            NSLog("%@", "Unread state \(url): title=\(state.title) icons=\(state.icons) labels=\(state.labels)")
         }
 
         pruneFrames()
@@ -81,7 +81,7 @@ final class UnreadTracker: NSObject, WKScriptMessageHandler {
 
     private func removeFrame(_ frame: String) {
         if frames.removeValue(forKey: frame) != nil {
-            NSLog("Unread frame removed: \(frame)")
+            NSLog("%@", "Unread frame removed: \(frame)")
         }
     }
 
