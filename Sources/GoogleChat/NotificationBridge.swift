@@ -45,6 +45,11 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
     }
 
     func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard Self.isGoogleOrigin(message.frameInfo) else {
+            Log.debug("Notification rejected from \(message.frameInfo.securityOrigin.host)")
+            return
+        }
+
         guard
             let payload = message.body as? [String: Any],
             let type = payload["type"] as? String,
@@ -54,7 +59,7 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
         }
 
         let tag = payload["tag"] as? String ?? ""
-        let thread = payload["thread"] as? String ?? ""
+        let thread = Self.limited(payload["thread"] as? String, to: Self.maximumThreadLength)
 
         switch type {
         case "show":
@@ -65,6 +70,37 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
             center.removeDeliveredNotifications(withIdentifiers: [identifier(id: id, tag: tag)])
         default:
             break
+        }
+    }
+
+    /// The shim runs in every frame. Chat embeds frames from other origins, and a script message is
+    /// delivered whatever frame posted it, so the frame's origin decides whether the payload is used.
+    private static func isGoogleOrigin(_ frame: WKFrameInfo) -> Bool {
+        let host = frame.securityOrigin.host.lowercased()
+        return host == "google.com" || host.hasSuffix(".google.com")
+    }
+
+    private static let maximumTitleLength = 300
+    private static let maximumBodyLength = 1000
+    private static let maximumThreadLength = 200
+    private static let maximumGroupLength = 200
+
+    private static func limited(_ value: String?, to maximum: Int, fallback: String = "") -> String {
+        guard let value, !value.isEmpty else {
+            return fallback
+        }
+
+        return String(value.prefix(maximum))
+    }
+
+    /// A GroupId as Chat produces it. Anything else is not used as a click target.
+    private static func isValidGroup(_ value: String) -> Bool {
+        guard !value.isEmpty, value.count <= maximumGroupLength else {
+            return false
+        }
+
+        return value.allSatisfy { character in
+            character.isASCII && (character.isLetter || character.isNumber || character == "-" || character == "_")
         }
     }
 
@@ -86,16 +122,24 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
     /// (`dm/<id>` or `space/<id>`) is used when the shim could find it.
     private func show(id: String, tag: String, thread: String, payload: [String: Any]) {
         let content = UNMutableNotificationContent()
-        content.title = payload["title"] as? String ?? "Google Chat"
-        content.body = payload["body"] as? String ?? ""
+        content.title = Self.limited(payload["title"] as? String, to: Self.maximumTitleLength, fallback: "Google Chat")
+        content.body = Self.limited(payload["body"] as? String, to: Self.maximumBodyLength)
 
         // Kept in userInfo so a click still knows which conversation to open after the page was
         // reloaded or the app was restarted, when the shim no longer has the notification instance.
+        // Values that fail validation are left out: a click uses them as a target.
+        let kind = payload["kind"] as? String ?? ""
+        let group = payload["group"] as? String ?? ""
+        let hasConversation = (kind == "dm" || kind == "space") && Self.isValidGroup(group)
+        let target = (payload["target"] as? String)
+            .flatMap(URL.init(string:))
+            .flatMap { LinkPolicy.isInternal($0) ? $0 : nil }
+
         content.userInfo = [
             "jsId": id,
-            "kind": payload["kind"] as? String ?? "",
-            "group": payload["group"] as? String ?? "",
-            "target": payload["target"] as? String ?? "",
+            "kind": hasConversation ? kind : "",
+            "group": hasConversation ? group : "",
+            "target": hasConversation ? (target?.absoluteString ?? "") : "",
         ]
 
         if !thread.isEmpty {

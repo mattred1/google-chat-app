@@ -49,6 +49,23 @@ The notification and unread shims return early unless the page host is `google.c
 subdomain. Chat embeds frames from other origins (feedback, contacts hovercard, account cookie
 rotation), and those frames must not be able to post notifications to the app.
 
+### Message validation
+
+`NotificationBridge` accepts `show` and `close` messages only from frames whose security origin host is
+`google.com` or a `*.google.com` subdomain. A message from any other origin is dropped before the payload
+is parsed; with `VerboseLogging` the rejected host is logged, never the payload.
+
+Values are validated before they are used:
+
+- `kind` must be `dm` or `space`;
+- `group` must be 1 to 200 characters of ASCII letters, digits, `-` or `_`;
+- `title` is capped at 300 characters and `body` at 1000 (the shim sends Chat's own strings);
+- `thread` is capped at 200 characters.
+
+`kind`, `group` and `target` are stored in `userInfo` only when `kind` and `group` are valid and `target`
+is an internal URL, because a click uses those values as a target. Invalid values are dropped: the
+notification is still shown, only without a conversation to open.
+
 ### Logging
 
 The `Notification ...`, `Notification click ...` and `Opening conversation ...` lines contain message
@@ -93,6 +110,9 @@ Authorization failures and `Showing notification failed` are errors and are alwa
 ## Known limitations
 
 - Notification actions (reply from the notification) are not supported (`maxActions` is 0).
+- Requiring `isMainFrame` for `gchatNotification` messages is a possible follow-up, but it is not
+  applied. Chat may post notifications from a subframe, so it must be verified with a live message
+  before that check is added.
 - If Chat changes the data format, the conversation is not found: the notification still appears, but
   clicking it only brings the app to the front. The page data is not forwarded to the app, so inspect it
   in the page with `findGroup` instead.
