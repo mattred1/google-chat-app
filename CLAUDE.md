@@ -61,9 +61,9 @@ stays in the app; `PopupCatcher` and `DownloadManager` handle `window.open` and 
    ```sh
    "build/Google Chat.app/Contents/MacOS/GoogleChat" > /tmp/gchat.log 2>&1 &
    ```
-2. Useful log prefixes: `Notification`, `Notification click`, `Opening conversation`, `Unread state`,
-   `Opened externally`.
-3. Inspect the page with Safari > Develop > Google Chat (`isInspectable` is on).
+2. Useful log prefixes, only with `VerboseLogging` enabled: `Notification`, `Notification click`,
+   `Opening conversation`, `Unread state`, `Opened externally`.
+3. Inspect the page with Safari > Develop > Google Chat (only when `WebInspectorEnabled` is set).
 4. Manual checklist for releases: sign in works; a message with the window hidden (Cmd+W) shows a
    notification; clicking it opens that conversation; the Dock badge matches Chat's unread count;
    after sending with Enter the conversation stays at the bottom; external links open in the browser.

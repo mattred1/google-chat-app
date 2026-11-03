@@ -21,6 +21,8 @@ import WebKit
 final class ChatWindowController: NSWindowController, NSWindowDelegate {
     private static let frameName = "MainWindow"
     private static let zoomKey = "pageZoom"
+    /// Off by default: the Web Inspector lets Safari attach to the signed-in session.
+    private static let inspectorKey = "WebInspectorEnabled"
 
     private let webView: WKWebView
     private let downloads = DownloadManager()
@@ -56,7 +58,7 @@ final class ChatWindowController: NSWindowController, NSWindowDelegate {
         webView = WKWebView(frame: .zero, configuration: configuration)
         webView.customUserAgent = LinkPolicy.userAgent
         webView.allowsBackForwardNavigationGestures = true
-        webView.isInspectable = true
+        webView.isInspectable = UserDefaults.standard.bool(forKey: Self.inspectorKey)
 
         let storedZoom = UserDefaults.standard.double(forKey: Self.zoomKey)
         webView.pageZoom = storedZoom > 0 ? storedZoom : 1
@@ -187,7 +189,7 @@ extension ChatWindowController: WKNavigationDelegate {
         let isMainFrame = navigationAction.targetFrame?.isMainFrame ?? false
 
         if isMainFrame, navigationAction.navigationType == .linkActivated, LinkPolicy.isWeb(url), !LinkPolicy.isInternal(url) {
-            NSLog("%@", "Opened externally: \(url.absoluteString)")
+            Log.debug("Opened externally: \(url.absoluteString)")
             NSWorkspace.shared.open(url)
             decisionHandler(.cancel)
             return
@@ -250,7 +252,7 @@ extension ChatWindowController: WKUIDelegate {
         if LinkPolicy.isInternal(url) {
             webView.load(URLRequest(url: url))
         } else {
-            NSLog("%@", "Opened externally: \(url.absoluteString)")
+            Log.debug("Opened externally: \(url.absoluteString)")
             NSWorkspace.shared.open(url)
         }
     }

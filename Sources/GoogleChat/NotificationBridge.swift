@@ -58,7 +58,7 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
 
         switch type {
         case "show":
-            NSLog("%@", "Notification \(id): source=\(payload["source"] ?? "") tag=\(tag) thread=\(thread) data=\(payload["data"] ?? "")")
+            Log.debug("Notification \(id): source=\(payload["source"] ?? "") tag=\(tag) thread=\(thread)")
             remember(frame: message.frameInfo, for: id)
             show(id: id, tag: tag, thread: thread, payload: payload)
         case "close":
@@ -254,7 +254,7 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
             case .success(let value):
                 self?.handleClickResult(value, stored: stored)
             case .failure(let error):
-                NSLog("%@", "Notification click \(jsId) failed in frame: \(error.localizedDescription)")
+                Log.debug("Notification click \(jsId) failed in frame: \(error.localizedDescription)")
                 guard frame != nil else {
                     self?.openConversation(stored)
                     return
@@ -265,7 +265,7 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
                     case .success(let value):
                         self?.handleClickResult(value, stored: stored)
                     case .failure(let error):
-                        NSLog("%@", "Notification click \(jsId) failed in main frame: \(error.localizedDescription)")
+                        Log.debug("Notification click \(jsId) failed in main frame: \(error.localizedDescription)")
                         self?.openConversation(stored)
                     }
                 }
@@ -278,7 +278,7 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
     /// sidebar first, otherwise by loading its URL.
     private func handleClickResult(_ value: Any, stored: ClickTarget) {
         let result = value as? [String: Any] ?? [:]
-        NSLog("%@", "Notification click: \(result)")
+        Log.debug("Notification click: \(result)")
 
         let hasHandler = result["hasHandler"] as? Bool ?? false
         let fromServiceWorker = result["source"] as? String == "serviceWorker"
@@ -325,7 +325,7 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
 
         webView.evaluateJavaScript(script, in: nil, in: .page) { [weak webView] outcome in
             let opened = (try? outcome.get()) as? String == "clicked"
-            NSLog("%@", "Opening conversation \(target.kind)/\(target.group) through the sidebar: \(opened ? "succeeded" : "not found")")
+            Log.debug("Opening conversation \(target.kind)/\(target.group) through the sidebar: \(opened ? "succeeded" : "not found")")
 
             if !opened, let url = target.target, LinkPolicy.isInternal(url) {
                 webView?.load(URLRequest(url: url))

@@ -49,6 +49,19 @@ The notification and unread shims return early unless the page host is `google.c
 subdomain. Chat embeds frames from other origins (feedback, contacts hovercard, account cookie
 rotation), and those frames must not be able to post notifications to the app.
 
+### Logging
+
+The `Notification ...`, `Notification click ...` and `Opening conversation ...` lines contain message
+ids, conversation ids and notification data, so they are only written when the `VerboseLogging` default
+is `true`:
+
+```sh
+defaults write nl.baspeters.googlechat VerboseLogging -bool YES
+```
+
+The setting is read when a line is written; `defaults` changes are picked up after a relaunch.
+Authorization failures and `Showing notification failed` are errors and are always logged.
+
 ### Click handling
 
 1. `NotificationBridge` evaluates `window.__gchatNotificationClicked(id)` in the originating frame (falls

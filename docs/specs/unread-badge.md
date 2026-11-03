@@ -23,6 +23,10 @@ Dynamic values in `NSLog` messages are passed with a fixed format string (`"%@"`
 into the format string itself. Page URLs and labels can contain percent-encoded text that would
 otherwise be interpreted as formatting directives.
 
+`Unread state ...` and `Unread frame removed` contain page URLs, titles and labels, so they are only
+written when the `VerboseLogging` default is `true` (see
+[notifications](notifications.md#logging)). The badge itself never logs.
+
 `UnreadTracker` keeps the latest state per frame id (reset on every main-frame `didCommit`) and computes
 the badge with `UnreadCount`:
 

@@ -22,6 +22,18 @@ Status: implemented in 1.0.0, verified working on 2026-10-30.
   ([ADR 0004](../adr/0004-keep-web-view-active-in-background.md)).
 - Window frame autosave name `MainWindow`; zoom in `UserDefaults` key `pageZoom`.
 
+## Web Inspector
+
+The Web Inspector is off by default: with it enabled, Safari can attach to the web view and read the
+signed-in session. Set the `WebInspectorEnabled` default to `true` to turn it on, then relaunch:
+
+```sh
+defaults write nl.baspeters.googlechat WebInspectorEnabled -bool YES
+```
+
+Chat's page then appears under Safari > Develop. Remove the default (or set it to `NO`) to turn the
+inspector off again.
+
 ## Menu
 
 App, Edit, View and Window menus are built in code (`MainMenu`). The Edit menu is required: without it,
