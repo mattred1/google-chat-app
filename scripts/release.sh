@@ -15,8 +15,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# Creates a release of the version in Support/Info.plist: builds the app, zips it, creates the
-# tag v<version> and pushes it. With the GitHub CLI (gh), the release is published as well.
+# Creates and pushes the tag v<version> from Support/Info.plist. GitHub Actions builds the app
+# and publishes the ZIP as a release asset.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -24,8 +24,6 @@ cd "$ROOT"
 
 VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Support/Info.plist)"
 TAG="v$VERSION"
-ZIP="$ROOT/build/Google-Chat-$VERSION.zip"
-NOTES="$ROOT/build/release-notes-$VERSION.md"
 
 if [[ -n "$(git status --porcelain)" ]]; then
     echo "There are uncommitted changes. Commit them first." >&2
@@ -37,37 +35,7 @@ if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null || git ls-remote --exit
     exit 1
 fi
 
-"$ROOT/scripts/build.sh"
-
-rm -f "$ZIP"
-ditto -c -k --keepParent "$ROOT/build/Google Chat.app" "$ZIP"
-echo "Packaged: $ZIP"
-
-cat > "$NOTES" <<EOF
-## Installation
-
-1. Download \`Google-Chat-$VERSION.zip\` and unzip it.
-2. Drag **Google Chat.app** to your Applications folder.
-3. The app is not notarized by Apple. If macOS says the app cannot be opened, go to
-   System Settings > Privacy & Security and click **Open Anyway**. Or run this in Terminal:
-
-   \`\`\`sh
-   xattr -dr com.apple.quarantine "/Applications/Google Chat.app"
-   \`\`\`
-
-Requires macOS 14 or later.
-EOF
-
 git tag -a "$TAG" -m "Version $VERSION"
 git push origin "$TAG"
 echo "Pushed tag: $TAG"
-
-if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
-    gh release create "$TAG" "$ZIP" --title "Google Chat $VERSION" --notes-file "$NOTES"
-else
-    echo
-    echo "GitHub CLI not available. Publish the release yourself:"
-    echo "  https://github.com/baspetersnl/google-chat-app/releases/new?tag=$TAG"
-    echo "  Attachment:     $ZIP"
-    echo "  Description:    $NOTES"
-fi
+echo "GitHub Actions will build the app and publish its ZIP to Releases."

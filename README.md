@@ -6,7 +6,7 @@ The app follows the language of your Mac: English by default, Dutch when macOS i
 
 ## Installation
 
-Download the latest zip from [Releases](https://github.com/baspetersnl/google-chat-app/releases), unzip it
+Download the latest zip from [Releases](https://github.com/mattred1/google-chat-app/releases), unzip it
 and drag **Google Chat.app** to your Applications folder. The app is not notarized by Apple. If macOS says
 the app cannot be opened, go to System Settings > Privacy & Security and click **Open Anyway**, or run:
 
@@ -28,9 +28,14 @@ You only need the Command Line Tools, not Xcode.
 ## Creating a release
 
 1. Increase `CFBundleShortVersionString` (and `CFBundleVersion`) in `Support/Info.plist` and commit it.
-2. Run `./scripts/release.sh`. The script builds the app, creates `build/Google-Chat-<version>.zip`,
-   creates the tag `v<version>` and pushes it. With the [GitHub CLI](https://cli.github.com) (`gh`), the
-   release is published as well; otherwise the script shows the link to publish it yourself.
+2. Run `./scripts/release.sh`. It creates and pushes the `v<version>` tag to `origin`.
+3. The `Release` GitHub Actions workflow builds the app and attaches
+   `Google-Chat-<version>.zip` to a release in that repository. Download it from
+   [Releases](https://github.com/mattred1/google-chat-app/releases) after the workflow completes.
+
+For the workflow to publish releases, enable GitHub Actions for the repository and allow workflows
+to have read and write permissions. A version bump alone does not publish a release; the `v<version>`
+tag must be pushed.
 
 ## Features
 

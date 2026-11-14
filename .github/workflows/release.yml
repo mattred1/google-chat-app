@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-14
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Verify tag matches app version
+        id: version
+        run: |
+          VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Support/Info.plist)
+          EXPECTED_TAG="v$VERSION"
+          if [[ "$GITHUB_REF_NAME" != "$EXPECTED_TAG" ]]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match app version $EXPECTED_TAG"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build app
+        run: ./scripts/build.sh
+
+      - name: Package app
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          ZIP="$RUNNER_TEMP/Google-Chat-$VERSION.zip"
+          ditto -c -k --keepParent "build/Google Chat.app" "$ZIP"
+          echo "zip=$ZIP" >> "$GITHUB_ENV"
+
+          cat > "$RUNNER_TEMP/release-notes.md" <<EOF
+          ## Installation
+
+          1. Download \`Google-Chat-$VERSION.zip\` and unzip it.
+          2. Drag **Google Chat.app** to your Applications folder.
+          3. The app is not notarized by Apple. If macOS says the app cannot be opened, go to
+             System Settings > Privacy & Security and click **Open Anyway**. Or run this in Terminal:
+
+             \`\`\`sh
+             xattr -dr com.apple.quarantine "/Applications/Google Chat.app"
+             \`\`\`
+
+          Requires macOS 14 or later.
+          EOF
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "$ZIP" \
+            --verify-tag \
+            --title "Google Chat ${{ steps.version.outputs.version }}" \
+            --notes-file "$RUNNER_TEMP/release-notes.md"
