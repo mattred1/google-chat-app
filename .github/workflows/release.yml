@@ -35,7 +35,7 @@ jobs:
         run: |
           ZIP="$RUNNER_TEMP/Google-Chat-$VERSION.zip"
           ditto -c -k --keepParent "build/Google Chat.app" "$ZIP"
-          echo "zip=$ZIP" >> "$GITHUB_ENV"
+          echo "ZIP=$ZIP" >> "$GITHUB_ENV"
 
           cat > "$RUNNER_TEMP/release-notes.md" <<EOF
           ## Installation
